@@ -3,64 +3,336 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BleepFace — Support</title>
-<meta name="description" content="Support for BleepFace, the app that blurs faces and objects in your videos, entirely on your phone.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='none' stroke='%23F5A623' stroke-width='9'/><line x1='26' y1='26' x2='74' y2='74' stroke='%23F5A623' stroke-width='9'/></svg>">
+<title>BleepFace</title>
+<meta name="description" content="BleepFace blurs faces in your videos automatically, films with the blur baked in live, and checks whether a blur can be reversed. Everything runs on your iPhone.">
+<meta property="og:title" content="BleepFace">
+<meta property="og:description" content="Blur any face. Film with the blur live. Check it before you post. All on your iPhone.">
+<meta property="og:image" content="https://bleepface-site.pages.dev/assets/screens/03_blur_faces_live.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0B0806">
+<link rel="icon" href="assets/icon-512.png">
+<link rel="apple-touch-icon" href="assets/icon-512.png">
 <style>
-  :root{ --bg:#090B10; --panel:#11141B; --ink:#E8EAED; --muted:#9398A2; --amber:#F5A623; --line:#1F2430; }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
-       line-height:1.7;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:720px;margin:0 auto;padding:56px 22px 80px}
-  .mark{display:inline-flex;align-items:center;gap:2px;font-weight:800;font-size:30px;letter-spacing:-1px}
-  .mark .b{color:#fff}
-  .mark .f{color:#1A1000;background:var(--amber);padding:1px 11px;border-radius:9px}
-  .tag{color:var(--muted);font-size:17px;margin:14px 0 0}
-  h2{font-size:20px;margin:48px 0 10px;color:#fff}
-  p{margin:10px 0;color:#D4D7DD}
-  a{color:var(--amber);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:18px 0}
-  .faq h3{font-size:16px;color:#fff;margin:20px 0 4px}
-  .faq h3:first-child{margin-top:6px}
-  .faq p{color:var(--muted);margin:2px 0 0}
-  .cta{display:inline-block;margin-top:6px;font-weight:600}
-  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
-  footer a{color:var(--muted)}
+  /* Faces: Tanker (Fontshare, self hosted) carries the display lines. Body sits
+     in the system stack, which is SF on Apple devices, the same face the app
+     itself uses. */
+  @font-face {
+    font-family: "Tanker";
+    src: url("assets/fonts/Tanker-Regular.woff2") format("woff2");
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+  :root {
+    --ground: #0B0806;
+    --ground-2: #130E0A;
+    --ground-3: #1B1510;
+    --ink: #F4EFE7;
+    --ink-2: #CFC7BB;
+    --muted: #9D958A;
+    --amber: #F5A623;
+    --amber-ink: #1A1000;
+    --red: #FD2B5A;
+    --edge: rgba(255, 236, 210, 0.08);
+    --display: "Tanker", "Impact", "Arial Narrow", sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, system-ui, "Helvetica Neue", Arial, sans-serif;
+    --gutter: clamp(20px, 5vw, 72px);
+    --max: 1280px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: var(--body); line-height: 1.5;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--amber); color: var(--amber-ink); }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+
+  .wrap { width: min(var(--max), 100% - 2 * var(--gutter)); margin-inline: auto; }
+
+  /* Wordmark: the app's own mark, Bleep in white and Face on the amber box. */
+  .mark { display: inline-flex; align-items: center; gap: 4px; font-weight: 800;
+          letter-spacing: -0.03em; line-height: 1; white-space: nowrap; }
+  .mark .b { color: #fff; }
+  .mark .f { color: var(--amber-ink); background: var(--amber);
+             padding: 0.06em 0.34em 0.12em; border-radius: 0.3em; }
+
+  /* Nav sits over the hero, thin, no bar. */
+  .nav { position: absolute; inset: 0 0 auto 0; z-index: 5;
+         padding-top: clamp(18px, 3vw, 32px); }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; }
+  .nav .mark { font-size: clamp(22px, 2.4vw, 30px); }
+  .nav a.quiet { font-size: 15px; font-weight: 600; color: var(--ink-2); }
+  .nav a.quiet:hover { color: #fff; }
+
+  /* HERO. The plate is the artifact: a real Shoot capture on a real phone,
+     held in a real room. Text sits in the left third where the plate is dark. */
+  .hero { position: relative; min-height: min(100svh, 1000px); display: grid; align-items: end;
+          overflow: hidden; isolation: isolate; }
+  .hero .plate { position: absolute; inset: 0; z-index: -1; }
+  .hero .plate img { width: 100%; height: 100%; object-fit: cover;
+                     object-position: 78% 40%; transform: translateY(var(--py, 0)); will-change: transform; }
+  /* Grade the plate so the type has ground to sit on, feathered, never a slab. */
+  .hero .plate::after { content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(to right, rgba(11,8,6,.92) 0%, rgba(11,8,6,.72) 34%, rgba(11,8,6,.12) 62%, rgba(11,8,6,0) 80%),
+      linear-gradient(to top, rgba(11,8,6,1) 0%, rgba(11,8,6,.55) 18%, rgba(11,8,6,0) 42%); }
+  .hero .wrap { padding-block: clamp(120px, 16vw, 200px) clamp(56px, 8vw, 110px); }
+  .hero h1 { font-family: var(--display); font-weight: 400;
+             font-size: clamp(76px, 12.5vw, 196px); line-height: 0.86; letter-spacing: 0.005em;
+             text-transform: uppercase; max-width: 9ch; }
+  .hero h1 .dot { color: var(--amber); }
+  .hero p.sub { margin-top: clamp(18px, 2.4vw, 30px); max-width: 30ch;
+                font-size: clamp(18px, 1.7vw, 24px); color: var(--ink-2); line-height: 1.35; }
+  .cta { margin-top: clamp(26px, 3vw, 40px); display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .badge img { height: 54px; width: auto; }
+  .badge:hover img { filter: brightness(1.12); }
+  .cta small { font-size: 14px; color: var(--muted); flex: 1 1 180px; min-width: 0; }
+
+  /* Section rhythm */
+  section { padding-block: clamp(80px, 11vw, 160px); }
+  h2 { font-family: var(--display); font-weight: 400; text-transform: uppercase;
+       font-size: clamp(44px, 6.4vw, 96px); line-height: 0.9; letter-spacing: 0.005em; }
+  h2 .dot { color: var(--amber); }
+  .lede { font-size: clamp(17px, 1.5vw, 21px); color: var(--ink-2); max-width: 46ch; margin-top: 18px; line-height: 1.45; }
+  .facts { font-size: clamp(16px, 1.3vw, 19px); color: var(--ink-2); line-height: 1.5; }
+  .facts li { list-style: none; padding: 16px 0; border-top: 1px solid var(--edge); }
+  .facts li:last-child { border-bottom: 1px solid var(--edge); }
+  .facts strong { color: var(--ink); font-weight: 600; }
+
+  /* PROOF: three real screens on the ground, no tiles. */
+  .proof .wrap > header { display: grid; gap: 16px; margin-bottom: clamp(40px, 6vw, 80px); }
+  .screens { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(18px, 3vw, 44px); align-items: start; }
+  .screen { position: relative; }
+  .screen img { width: 100%; border-radius: clamp(18px, 2.6vw, 34px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 18px 40px -22px rgba(0,0,0,.9); }
+  .screen h3 { margin-top: 22px; font-size: clamp(22px, 2.2vw, 30px); font-weight: 700; letter-spacing: -0.02em; }
+  .screen p { margin-top: 8px; color: var(--muted); font-size: 16px; max-width: 30ch; }
+  .screen:nth-child(2) { transform: translateY(clamp(28px, 4vw, 64px)); }
+
+  /* CHECK: the honesty story. Red is the app's own verdict red, used once. */
+  .check { background: var(--ground-2); }
+  .split { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(36px, 6vw, 96px); align-items: center; }
+  .split .shot img { width: min(100%, 460px); margin-inline: auto; border-radius: 34px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 40px 80px -40px rgba(0,0,0,.95); }
+  .verdict { display: inline-block; margin-top: 26px; padding: 12px 16px; border-radius: 12px;
+             background: rgba(253,43,90,.14); color: #FFD3DB; font-size: 15px; line-height: 1.4; max-width: 44ch; }
+  .verdict b { color: #fff; }
+
+  /* STYLES: a plain ledger of what the app can actually do. */
+  .styles .split { grid-template-columns: 0.95fr 1.05fr; }
+  .ledger { margin-top: 28px; }
+  .ledger li { list-style: none; display: grid; grid-template-columns: 8ch 1fr; gap: 20px;
+               padding: 14px 0; border-top: 1px solid var(--edge); font-size: 17px; }
+  .ledger li:last-child { border-bottom: 1px solid var(--edge); }
+  .ledger b { font-weight: 700; color: var(--ink); }
+  .ledger span { color: var(--muted); }
+
+  /* PRIVACY: the Home screen makes the claim in the app's own words. */
+  .privacy { background: var(--ground-2); }
+  .privacy .facts { margin-top: 30px; }
+
+  /* PRICING: one honest ledger, not three glowing cards. */
+  .pricing .plans { margin-top: clamp(36px, 5vw, 64px); }
+  .plan { display: grid; grid-template-columns: 1.2fr 1fr 1.6fr; gap: 24px; align-items: baseline;
+          padding: 26px 0; border-top: 1px solid var(--edge); }
+  .plan:last-child { border-bottom: 1px solid var(--edge); }
+  .plan h3 { font-size: clamp(22px, 2vw, 28px); font-weight: 700; letter-spacing: -0.02em; }
+  .plan .price { font-family: var(--display); font-size: clamp(34px, 3.6vw, 52px); line-height: 1; letter-spacing: 0.01em; }
+  .plan .price small { font-family: var(--body); font-size: 15px; color: var(--muted); margin-left: 8px; letter-spacing: 0; }
+  .plan p { color: var(--muted); font-size: 16px; }
+  .plan p b { color: var(--ink-2); font-weight: 600; }
+  .fine { margin-top: 22px; color: var(--muted); font-size: 14px; max-width: 70ch; line-height: 1.5; }
+
+  /* CLOSE + FOOTER. The big wordmark is composed: caps, spaced, anchored to
+     the very bottom edge, on top of everything, bleeding off the bottom. */
+  .close { text-align: center; padding-bottom: clamp(40px, 6vw, 80px); }
+  .close h2 { font-size: clamp(52px, 8vw, 120px); }
+  .close .cta { justify-content: center; }
+  footer { position: relative; overflow: hidden; background: var(--ground-3); padding-top: 56px; }
+  footer .links { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+                  font-size: 15px; color: var(--ink-2); }
+  footer .links a:hover { color: #fff; }
+  footer .legal { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; padding-inline: var(--gutter); }
+  footer .big { position: relative; margin-top: 44px; height: clamp(88px, 15vw, 230px); overflow: hidden; }
+  footer .big .mark { position: absolute; left: 50%; bottom: -0.22em; transform: translateX(-50%);
+                      font-family: var(--display); font-weight: 400; letter-spacing: 0.06em;
+                      font-size: clamp(120px, 20vw, 320px); text-transform: uppercase; gap: 0.08em; }
+  footer .big .mark .f { border-radius: 0.14em; padding: 0.02em 0.16em 0.06em; }
+
+  @media (max-width: 900px) {
+    .screens { grid-template-columns: 1fr; gap: 44px; }
+    .screen:nth-child(2) { transform: none; }
+    .screen img { width: min(100%, 360px); margin-inline: auto; }
+    .screen h3, .screen p { text-align: center; margin-inline: auto; }
+    .split, .styles .split { grid-template-columns: 1fr; gap: 40px; }
+    .split .shot { order: -1; }
+    .plan { grid-template-columns: 1fr; gap: 8px; }
+    .hero .plate img { object-position: 50% 18%; }
+    .hero .plate::after { background:
+      linear-gradient(to top, rgba(11,8,6,1) 0%, rgba(11,8,6,.88) 26%, rgba(11,8,6,.35) 52%, rgba(11,8,6,0) 72%); }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .hero .plate img { transform: none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="mark"><span class="b">Bleep</span><span class="f">Face</span></div>
-  <p class="tag">Blur faces and objects in your videos. Everything stays on your phone.</p>
 
-  <h2>Support</h2>
-  <p>Need help, found a bug, or have an idea? We read every message.</p>
-  <div class="card">
-    <p style="margin:0">Email us at <a href="mailto:support@bleepface.xyz">support@bleepface.xyz</a></p>
+<nav class="nav">
+  <div class="wrap">
+    <a class="mark" href="#top" aria-label="BleepFace"><span class="b">Bleep</span><span class="f">Face</span></a>
+    <a class="quiet" href="#get">Get the app</a>
   </div>
-  <p>You can also tap <strong>Send diagnostics</strong> on the BleepFace home screen to attach a log of app activity to your message. The log never contains your video.</p>
+</nav>
 
-  <h2>Common questions</h2>
-  <div class="card faq">
-    <h3>How do I blur a face?</h3>
-    <p>Open a video, then tap Blur all faces to cover everyone automatically, or tap Add blur to place one by hand.</p>
-    <h3>Does my video get uploaded anywhere?</h3>
-    <p>No. Everything runs on your phone. Your videos are never uploaded, copied, or sent to us or anyone else.</p>
-    <h3>A face was missed. What do I do?</h3>
-    <p>Tap Add blur, drop it on the spot, and use the arrow to track it as the person moves.</p>
-    <h3>How do I save my edited video?</h3>
-    <p>Tap Export. A clean copy is saved to your photo library.</p>
-    <h3>How do I cover a face a different way?</h3>
-    <p>Select a blur, open Style, and choose blur, pixels, blackout, or an emoji. You can pick what sits behind an emoji too.</p>
+<header class="hero" id="top">
+  <div class="plate" aria-hidden="true"><img src="assets/plates/live.jpg" alt=""></div>
+  <div class="wrap">
+    <h1>Blur any face<span class="dot">.</span></h1>
+    <p class="sub">It finds the faces for you, films with the blur baked in, and shows you if a blur can be undone. All on your iPhone.</p>
+    <div class="cta">
+      <a class="badge" href="#get" aria-label="Download on the App Store"><img src="assets/app-store-badge.svg" alt="Download on the App Store"></a>
+      <small>Free to try, no account needed.</small>
+    </div>
   </div>
+</header>
 
-  <a class="cta" href="privacy.html">Read our privacy policy &rarr;</a>
+<section class="proof">
+  <div class="wrap">
+    <header>
+      <h2>Three taps, done<span class="dot">.</span></h2>
+      <p class="lede">Real screens from the app. Nothing here is a mockup.</p>
+    </header>
+    <div class="screens">
+      <figure class="screen">
+        <img src="assets/screens/cap_01_blur_any_face_source.jpg" alt="BleepFace editor with two faces found and covered automatically" loading="lazy" width="560" height="1217">
+        <h3>It finds the faces.</h3>
+        <p>Tap Blur all faces. It scans the whole clip and covers every face it finds, then follows them as they move. No keyframes.</p>
+      </figure>
+      <figure class="screen">
+        <img src="assets/screens/cap_06_shoot_live_8850.jpg" alt="BleepFace live camera with a face covered while recording" loading="lazy" width="560" height="1217">
+        <h3>It blurs while you film.</h3>
+        <p>Shoot covers faces live in the camera, so the blur is in the file before anything is saved.</p>
+      </figure>
+      <figure class="screen">
+        <img src="assets/screens/cap_07_check_clean_source.jpg" alt="BleepFace Check screen showing a face recovered from a weak blur" loading="lazy" width="560" height="1217">
+        <h3>It checks your blur.</h3>
+        <p>Check runs the same tools someone would use to reverse a blur and shows you what comes back.</p>
+      </figure>
+    </div>
+  </div>
+</section>
 
-  <footer>
-    &copy; 2026 BleepFace &nbsp;&middot;&nbsp; <a href="privacy.html">Privacy</a> &nbsp;&middot;&nbsp; <a href="mailto:support@bleepface.xyz">Support</a>
-  </footer>
-</div>
+<section class="check" id="check">
+  <div class="wrap split">
+    <div>
+      <h2>A finding is a fact<span class="dot">.</span><br>An all clear is a guess<span class="dot">.</span></h2>
+      <p class="lede">Most blur apps hand you a soft smear and a good feeling. BleepFace attacks its own work. Check sharpens, sampled frame by sampled frame, the way a stranger with free tools would, and tells you when a face comes back.</p>
+      <p class="verdict"><b>Not safe.</b> A recognizable face was recovered on 15 of 15 sampled frames. This redaction can be reversed. Use a stronger blur or Blackout.</p>
+      <p class="lede" style="margin-top:22px">When nothing comes back, it says exactly that, and nothing more. It will never tell you a video is safe, because no software honestly can. Check is free, forever, and nothing on that screen can be saved or shared.</p>
+    </div>
+    <div class="shot"><img src="assets/screens/cap_07_check_clean_source.jpg" alt="The Check screen with the attacker view on and a red Not safe verdict" loading="lazy" width="560" height="1217"></div>
+  </div>
+</section>
+
+<section class="styles">
+  <div class="wrap split">
+    <div class="shot"><img src="assets/screens/cap_03_pick_your_cover_source.jpg" alt="The cover style picker with Blur, Pixels, Scramble, Blackout and Flare" loading="lazy" width="560" height="1217"></div>
+    <div>
+      <h2>Blur it any way<span class="dot">.</span></h2>
+      <p class="lede">Every blur stays editable right up until you export. Stretch it, move it, restyle it, or take it off.</p>
+      <ul class="ledger">
+        <li><b>Blur</b><span>Soft cover with an edge you set from hard to soft.</span></li>
+        <li><b>Pixels</b><span>Classic mosaic, sized to the face.</span></li>
+        <li><b>Scramble</b><span>Shuffled blocks that do not resolve into a face.</span></li>
+        <li><b>Blackout</b><span>A solid panel. The one that beats everything.</span></li>
+        <li><b>Flare</b><span>A bright bloom for a lighter touch.</span></li>
+        <li><b>Emoji</b><span>Any emoji or sticker riding on the face, with a cover underneath or nothing at all.</span></li>
+        <li><b>Timing</b><span>Set in and out points by scrubbing the footage. Nudge by fractions of a second.</span></li>
+        <li><b>Shapes</b><span>Stretch a blur into a rectangle for plates, screens, and signs.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="privacy" id="privacy">
+  <div class="wrap split">
+    <div>
+      <h2>Processed on your iPhone<span class="dot">.</span></h2>
+      <p class="lede">Face detection and blurring happen on the device in your hand. Photos and videos are processed on this iPhone and never uploaded.</p>
+      <ul class="facts">
+        <li><strong>No cloud.</strong> There is no server, so there is nothing to upload to.</li>
+        <li><strong>No account.</strong> No sign in, no email, no profile.</li>
+        <li><strong>No analytics.</strong> No tracking SDKs, no ad networks, no third parties.</li>
+        <li><strong>Your library, your call.</strong> The app only sees the videos you pick and only saves what you export.</li>
+      </ul>
+    </div>
+    <div class="shot"><img src="assets/screens/cap_home_updated.jpg" alt="The BleepFace home screen, which reads: Photos and videos are processed on this iPhone" loading="lazy" width="560" height="1217"></div>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <h2>Honest pricing<span class="dot">.</span></h2>
+    <p class="lede">There are no weekly plans and no fake countdowns here, and Check is free for everyone, forever.</p>
+    <div class="plans">
+      <div class="plan">
+        <h3>Free</h3>
+        <div class="price">$0</div>
+        <p>Every feature. Exports carry a small BleepFace mark. <b>Check is free.</b></p>
+      </div>
+      <div class="plan">
+        <h3>Pro Monthly</h3>
+        <div class="price">$7.99<small>per month</small></div>
+        <p>Clean exports, no mark. Cancel anytime in your App Store settings.</p>
+      </div>
+      <div class="plan">
+        <h3>Pro Yearly</h3>
+        <div class="price">$39.99<small>per year</small></div>
+        <p><b>3 day free trial</b>, then billed yearly. Cancel anytime.</p>
+      </div>
+      <div class="plan">
+        <h3>Pro Lifetime</h3>
+        <div class="price">$79.99<small>once</small></div>
+        <p><b>Launch price.</b> Rises to $99.99 after the launch window. Pay once, own it.</p>
+      </div>
+    </div>
+    <p class="fine">Prices in USD. Subscriptions bill to your Apple ID and renew automatically unless cancelled at least 24 hours before the period ends. Manage or cancel anytime in your App Store settings.</p>
+  </div>
+</section>
+
+<section class="close" id="get">
+  <div class="wrap">
+    <h2>Post it anyway<span class="dot">.</span></h2>
+    <p class="lede" style="margin-inline:auto">Show more of your world. Expose less of the people in it.</p>
+    <div class="cta">
+      <a class="badge" href="https://apps.apple.com/app/bleepface" aria-label="Download on the App Store"><img src="assets/app-store-badge.svg" alt="Download on the App Store"></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="links">
+    <a href="privacy.html">Privacy</a>
+    <a href="support.html">Support</a>
+    <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">Terms of Use</a>
+    <a href="mailto:support@bleepface.xyz">support@bleepface.xyz</a>
+  </div>
+  <p class="legal">&copy; 2026 Tamed Malice LLC. BleepFace is made in the USA and runs entirely on your device.</p>
+  <div class="big" aria-hidden="true"><span class="mark"><span class="b">Bleep</span><span class="f">Face</span></span></div>
+</footer>
+
+<script>
+  // Hero plate drifts a touch slower than the page: the only motion here, and
+  // it acts on an element that is already fully visible.
+  (function () {
+    var m = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var img = document.querySelector('.hero .plate img');
+    if (!img || m.matches) return;
+    var raf = null;
+    function tick() { raf = null; img.style.setProperty('--py', (window.scrollY * 0.18) + 'px'); }
+    window.addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(tick); }, { passive: true });
+  })();
+</script>
 </body>
 </html>
